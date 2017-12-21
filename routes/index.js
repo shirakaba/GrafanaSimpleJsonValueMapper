@@ -41,6 +41,7 @@ router.get('/', function(req, res, next) {
  * This is the API endpoint that Grafana Simple JSON Datasources uses for metrics and template variables.
  */
 router.post('/search', isAuthorized, function(req, res, next) {
+    // console.log(req.query);
     // If there was no target to the search, return an empty result
     if (!req.body || !req.body.target || req.body.target.length === 0) {
         res.json([]);
@@ -70,6 +71,8 @@ router.post('/search', isAuthorized, function(req, res, next) {
                 return;
             }
 
+            console.log(query);
+
             // Get the target data
             var values = data[query.data];
 
@@ -79,26 +82,22 @@ router.post('/search', isAuthorized, function(req, res, next) {
                 return;
             }
 
-            // Is this an array/list of values?
-            if (typeof(values.length) === 'number') {
+            // Check to see if there is one or more ID filters
+            var idFilters = {};
+            var hasIdFilters = query.id && query.id.length > 0;
 
+            // Is this an array/list of values?
+            // if (typeof(values.length) === 'number') {
+            if (Array.isArray(values)) {
                 // Go through each value
                 for (var i = 0; i < values.length; i++) {
                     var val = values[i];
 
-                    // If there's a contains filter, apply it
-                    if (!containsFilter || val.toString().toLowerCase().indexOf(containsFilter) !== -1) {
-                        // If so include it in the results.
-                        results.push({ text: val, value: val });
-                    }
+                    pushResults(results, val, val, containsFilter);
                 }
             }
             // Otherwise this is an aliased look-up
             else {
-                // Check to see if there is one or more ID filters
-                var idFilters = {};
-                var hasIdFilters = query.id && query.id.length > 0;
-
                 // If so, construct the ID filters object
                 if (hasIdFilters) {
                     // If it starts with parentheses, it's a list of IDs separated by '|' character
@@ -115,29 +114,20 @@ router.post('/search', isAuthorized, function(req, res, next) {
                     else {
                         idFilters[query.id] = true;
                     }
-
-                    // Only select from the ID filters
-                    for (var id in idFilters) {
-                        // Make sure the ID is found
-                        if (!values[id]) continue;
-
-                        // If there's a contains filter, apply it
-                        if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
-                            results.push({ text: values[id], value: id });
-                        }
-                    }
                 }
-                // Otherwise there are no ID filters, just go through all values
-                else {
-                    // Go through each value
-                    for (var id in values) {
-                        // If there's a contains filter, apply it
-                        if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
-                            results.push({ text: values[id], value: id });
-                        }
+                // Go through each value
+                for (var id in values) {
+                    var val = values[id];
+
+                    if(hasIdFilters){
+                        // Make sure the ID is found
+                        if (!val) continue;
                     }
+                    pushResults(results, val, id, containsFilter);
                 }
             }
+
+            console.log(results || []);
 
             // Return results
             res.json(results || []);
@@ -147,5 +137,15 @@ router.post('/search', isAuthorized, function(req, res, next) {
         }
     }
 });
+
+
+
+function pushResults(results, val, id, containsFilter){
+    console.log(values[id]); // ["IS-50529","IS-51150"] of Array type.
+    // If there's a contains filter, apply it
+    if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
+        results.push({ text: val, value: id });
+    }
+}
 
 module.exports = router;
