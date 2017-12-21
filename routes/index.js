@@ -139,7 +139,7 @@ function pushResults(results, val, id, containsFilter){
     if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
         results.push(
             {
-                text: Array.isArray(val) ? JSON.stringify(val.map(function(arrMember){ return { text: arrMember, value: arrMember }; })) : val,
+                text: Array.isArray(val) ? val.map(function(arrMember){ return { text: arrMember, value: arrMember }; }) : val,
                 value: id
             }
         );
