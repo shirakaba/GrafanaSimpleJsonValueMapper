@@ -86,18 +86,8 @@ router.post('/search', isAuthorized, function(req, res, next) {
             var idFilters = {};
             var hasIdFilters = query.id && query.id.length > 0;
 
-            // Is this an array/list of values?
-            // if (typeof(values.length) === 'number') {
-            if (Array.isArray(values)) {
-                // Go through each value
-                for (var i = 0; i < values.length; i++) {
-                    var val = values[i];
-
-                    pushResults(results, val, val, containsFilter);
-                }
-            }
-            // Otherwise this is an aliased look-up
-            else {
+            // Will be an aliased look-up if not an array.
+            if (!Array.isArray(values)) {
                 // If so, construct the ID filters object
                 if (hasIdFilters) {
                     // If it starts with parentheses, it's a list of IDs separated by '|' character
@@ -115,16 +105,18 @@ router.post('/search', isAuthorized, function(req, res, next) {
                         idFilters[query.id] = true;
                     }
                 }
-                // Go through each value
-                for (var id in values) {
-                    var val = values[id];
+            }
 
-                    if(hasIdFilters){
-                        // Make sure the ID is found
-                        if (!val) continue;
-                    }
-                    pushResults(results, val, id, containsFilter);
+            // Go through each value
+            for (var id in values) {
+                if(!values.hasOwnProperty(id)) continue;
+                var val = values[id];
+
+                if(hasIdFilters){
+                    // Make sure the ID is found
+                    if (!val) continue;
                 }
+                pushResults(results, val, Array.isArray(values) ? val : id, containsFilter);
             }
 
             console.log(results || []);
@@ -141,7 +133,7 @@ router.post('/search', isAuthorized, function(req, res, next) {
 
 
 function pushResults(results, val, id, containsFilter){
-    console.log(values[id]); // ["IS-50529","IS-51150"] of Array type.
+    // console.log(val); // ["IS-50529","IS-51150"] of Array type.
     // If there's a contains filter, apply it
     if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
         results.push({ text: val, value: id });
