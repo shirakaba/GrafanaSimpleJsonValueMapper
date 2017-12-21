@@ -116,6 +116,7 @@ router.post('/search', isAuthorized, function(req, res, next) {
                     // Make sure the ID is found
                     if (!val) continue;
                 }
+
                 pushResults(results, val, Array.isArray(values) ? val : id, containsFilter);
             }
 
@@ -136,7 +137,12 @@ function pushResults(results, val, id, containsFilter){
     // console.log(val); // ["IS-50529","IS-51150"] of Array type.
     // If there's a contains filter, apply it
     if (!containsFilter || id.toLowerCase().indexOf(containsFilter) !== -1) {
-        results.push({ text: val, value: id });
+        results.push(
+            {
+                text: Array.isArray(val) ? JSON.stringify(val.map(function(arrMember){ return { text: arrMember, value: arrMember }; })) : val,
+                value: id
+            }
+        );
     }
 }
 
